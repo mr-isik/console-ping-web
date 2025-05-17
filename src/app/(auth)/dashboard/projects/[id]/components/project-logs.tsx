@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -45,7 +45,7 @@ interface Log {
   id: string;
   message: string;
   level: string;
-  meta: Record<string, any>;
+  meta: Record<string, unknown>;
   projectId: string;
   createdAt: Date;
 }
@@ -55,7 +55,6 @@ interface ProjectLogsProps {
 }
 
 export default function ProjectLogs({ projectId }: ProjectLogsProps) {
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -248,12 +247,12 @@ export default function ProjectLogs({ projectId }: ProjectLogsProps) {
 function LogItem({ log }: { log: Log }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const getBadgeVariant = (level: string) => {
+  const getBadgeVariant = (
+    level: string
+  ): "destructive" | "secondary" | "outline" | "default" => {
     switch (level.toLowerCase()) {
       case "error":
         return "destructive";
-      case "warning":
-        return "warning";
       case "info":
         return "secondary";
       case "debug":
@@ -265,14 +264,12 @@ function LogItem({ log }: { log: Log }) {
 
   return (
     <Card className="overflow-hidden">
-      <CardContent className="p-3">
+      <CardContent>
         <div className="flex flex-col gap-2">
           <div className="flex items-start justify-between gap-2">
             <div className="space-y-1 flex-1">
               <div className="flex items-center gap-2">
-                <Badge variant={getBadgeVariant(log.level) as any}>
-                  {log.level}
-                </Badge>
+                <Badge variant={getBadgeVariant(log.level)}>{log.level}</Badge>
                 <span className="text-xs text-muted-foreground">
                   {formatDistanceToNow(new Date(log.createdAt), {
                     addSuffix: true,

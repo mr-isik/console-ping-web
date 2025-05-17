@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChevronRight, Settings } from "lucide-react";
+import { ChevronRight, Clock, PlusCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 // Types based on Prisma schema
@@ -30,65 +30,65 @@ export default async function ProjectsList() {
           Get started by creating your first project
         </p>
         <Link href="/dashboard/projects/new">
-          <Button>Create Project</Button>
+          <Button>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Create Project
+          </Button>
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       {projects.map((project) => (
         <ProjectItem key={project.id} project={project} />
       ))}
       {projects.length > 0 && (
-        <div className="text-center">
-          <Link href="/dashboard/projects">
-            <Button variant="link" className="gap-1">
-              View all projects
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </Link>
-        </div>
+        <Link
+          href="/dashboard/projects"
+          className="flex items-center justify-center rounded-lg border border-dashed p-4 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+        >
+          <Button variant="ghost" className="gap-1">
+            View all projects
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </Link>
       )}
     </div>
   );
 }
 
 function ProjectItem({ project }: { project: Project }) {
+  // Format the creation time
+  const timeAgo = formatDistanceToNow(new Date(project.createdAt), {
+    addSuffix: true,
+  });
+  const logCount = project._count?.logs || 0;
+
   return (
-    <Card className="overflow-hidden transition-all hover:bg-accent/50">
-      <Link href={`/dashboard/projects/${project.id}`}>
-        <CardContent className="p-3">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{project.name}</span>
-                {project._count && (
-                  <Badge variant="secondary" className="text-xs">
-                    {project._count.logs} logs
-                  </Badge>
-                )}
+    <Link href={`/dashboard/projects/${project.id}`}>
+      <Card className="overflow-hidden transition-all hover:bg-accent/50 hover:shadow-sm">
+        <CardContent>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div>
+                  <h3 className="font-medium">{project.name}</h3>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    <span>{timeAgo}</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex text-xs text-muted-foreground">
-                <span>
-                  Created{" "}
-                  {formatDistanceToNow(new Date(project.createdAt), {
-                    addSuffix: true,
-                  })}
-                </span>
-              </div>
+              <Badge variant="secondary" className="text-xs font-normal">
+                {logCount} logs
+              </Badge>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-              <div>
-                <Settings className="h-4 w-4" />
-                <span className="sr-only">Settings</span>
-              </div>
-            </Button>
           </div>
         </CardContent>
-      </Link>
-    </Card>
+      </Card>
+    </Link>
   );
 }
 

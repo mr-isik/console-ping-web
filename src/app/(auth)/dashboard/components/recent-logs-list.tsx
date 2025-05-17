@@ -1,13 +1,21 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDistanceToNow } from "date-fns";
+import {
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle2,
+  Info,
+  Terminal,
+} from "lucide-react";
+import Link from "next/link";
 
 // Types based on Prisma schema
 interface Log {
   id: string;
   message: string;
   level: string;
-  meta: Record<string, any>;
+  meta: Record<string, unknown>;
   projectId: string;
   project: {
     name: string;
@@ -21,26 +29,52 @@ export default async function RecentLogsList() {
 
   if (logs.length === 0) {
     return (
-      <div className="text-center text-muted-foreground">No logs found.</div>
+      <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
+        <h3 className="mb-2 text-lg font-semibold">No logs found</h3>
+        <p className="text-sm text-muted-foreground">
+          Logs will appear here when your applications start sending them
+        </p>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       {logs.map((log) => (
         <LogItem key={log.id} log={log} />
       ))}
+      <Link
+        href="/dashboard/logs"
+        className="block text-center text-sm text-muted-foreground hover:text-primary transition-colors mt-4"
+      >
+        View all logs →
+      </Link>
     </div>
   );
 }
 
 function LogItem({ log }: { log: Log }) {
-  const getBadgeVariant = (level: string) => {
+  const getLevelIcon = (level: string) => {
+    switch (level.toLowerCase()) {
+      case "error":
+        return <AlertCircle className="h-4 w-4 text-destructive" />;
+      case "warning":
+        return <AlertTriangle className="h-4 w-4 text-warning" />;
+      case "info":
+        return <Info className="h-4 w-4 text-blue-500" />;
+      case "debug":
+        return <Terminal className="h-4 w-4 text-muted-foreground" />;
+      default:
+        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+    }
+  };
+
+  const getBadgeVariant = (
+    level: string
+  ): "destructive" | "secondary" | "outline" | "default" => {
     switch (level.toLowerCase()) {
       case "error":
         return "destructive";
-      case "warning":
-        return "warning";
       case "info":
         return "secondary";
       case "debug":
@@ -50,37 +84,80 @@ function LogItem({ log }: { log: Log }) {
     }
   };
 
+  const getBadgeStyle = (level: string) => {
+    switch (level.toLowerCase()) {
+      case "error":
+        return "bg-destructive/10 text-destructive border-destructive/20";
+      case "warning":
+        return "bg-yellow-500/10 text-yellow-700 border-yellow-500/20";
+      case "info":
+        return "bg-blue-500/10 text-blue-700 border-blue-500/20";
+      case "debug":
+        return "bg-slate-500/10 text-slate-700 border-slate-500/20";
+      default:
+        return "bg-green-500/10 text-green-700 border-green-500/20";
+    }
+  };
+
+  const timeAgo = formatDistanceToNow(new Date(log.createdAt), {
+    addSuffix: true,
+  });
+
   return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="space-y-1 flex-1">
-            <div className="flex items-center gap-2">
-              <Badge variant={getBadgeVariant(log.level)}>{log.level}</Badge>
-              <span className="text-xs text-muted-foreground">
-                {log.project.name}
-              </span>
-            </div>
-            <p className="break-words text-sm">{log.message}</p>
-            {Object.keys(log.meta).length > 0 && (
-              <div className="text-xs text-muted-foreground">
-                {Object.entries(log.meta)
-                  .slice(0, 3)
-                  .map(([key, value]) => (
-                    <span key={key} className="mr-2">
-                      {key}: {String(value)}
-                    </span>
-                  ))}
-                {Object.keys(log.meta).length > 3 && "..."}
+    <Link href={`/dashboard/projects/${log.projectId}/logs`}>
+      <Card className="overflow-hidden transition-all hover:bg-accent/50 hover:shadow-sm">
+        <CardContent>
+          <div className="flex items-start gap-3">
+            <div className="mt-1">{getLevelIcon(log.level)}</div>
+            <div className="space-y-1 flex-1 min-w-0">
+              <div className="flex items-center flex-wrap gap-2">
+                <Badge
+                  variant={getBadgeVariant(log.level)}
+                  className={`${getBadgeStyle(
+                    log.level
+                  )} px-1.5 py-0 h-5 font-medium`}
+                >
+                  {log.level}
+                </Badge>
+                <Link
+                  href={`/dashboard/projects/${log.projectId}`}
+                  className="text-xs font-medium text-muted-foreground hover:text-primary"
+                >
+                  {log.project.name}
+                </Link>
+                <span className="text-xs text-muted-foreground ml-auto whitespace-nowrap">
+                  {timeAgo}
+                </span>
               </div>
-            )}
+              <p className="text-sm font-medium break-words line-clamp-2">
+                {log.message}
+              </p>
+              {Object.keys(log.meta).length > 0 && (
+                <div className="flex gap-1.5 flex-wrap">
+                  {Object.entries(log.meta)
+                    .slice(0, 3)
+                    .map(([key, value]) => (
+                      <span
+                        key={key}
+                        className="inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 text-xs text-muted-foreground"
+                      >
+                        <span className="font-medium">{key}:</span>{" "}
+                        {String(value).substring(0, 20)}
+                        {String(value).length > 20 ? "..." : ""}
+                      </span>
+                    ))}
+                  {Object.keys(log.meta).length > 3 && (
+                    <span className="inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                      +{Object.keys(log.meta).length - 3} more
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-          <div className="text-xs text-muted-foreground whitespace-nowrap">
-            {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
 
@@ -90,7 +167,7 @@ async function getMockRecentLogs(): Promise<Log[]> {
   return [
     {
       id: "1",
-      message: "Application started successfully",
+      message: "Application started successfully with all dependencies loaded",
       level: "info",
       meta: { service: "api", instance: "worker-1" },
       projectId: "project-1",
@@ -99,16 +176,16 @@ async function getMockRecentLogs(): Promise<Log[]> {
     },
     {
       id: "2",
-      message: "Database connection failed",
+      message: "Database connection failed after multiple retries",
       level: "error",
-      meta: { service: "db", error: "Connection timeout" },
+      meta: { service: "db", error: "Connection timeout", retries: 3 },
       projectId: "project-2",
       project: { name: "Mobile App" },
       createdAt: new Date(Date.now() - 1000 * 60 * 30),
     },
     {
       id: "3",
-      message: "User authentication attempt",
+      message: "User authentication attempt from unknown IP address",
       level: "warning",
       meta: { userId: "user-123", ip: "192.168.1.1", attempts: 3 },
       projectId: "project-1",
