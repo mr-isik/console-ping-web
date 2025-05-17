@@ -1,26 +1,69 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChevronRight, Clock, PlusCircle } from "lucide-react";
+import {
+  ChevronRight,
+  Clock,
+  PlusCircle,
+  AlertCircle,
+  Loader2,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { fetcher } from "@/lib/axios";
+import { Project } from "../../../../../generated/prisma";
 
-// Types based on Prisma schema
-interface Project {
-  id: string;
-  name: string;
-  apiKey: string;
-  userId: string;
-  createdAt: Date;
-  updatedAt: Date;
-  _count?: {
-    logs: number;
-  };
-}
+export default function ProjectsList() {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-export default async function ProjectsList() {
-  // TODO: Replace with actual API call
-  const projects: Project[] = await getMockProjects();
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setIsLoading(true);
+        const { data } = await fetcher("/projects");
+        setProjects(data);
+        setError(null);
+      } catch (err) {
+        setError("Failed to load projects. Please try again later.");
+        console.error("Error fetching projects:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProjects();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
+        <Loader2 className="h-6 w-6 text-primary animate-spin mb-2" />
+        <p className="text-sm text-muted-foreground">Loading projects...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
+        <AlertCircle className="h-6 w-6 text-destructive mb-2" />
+        <h3 className="mb-2 text-lg font-semibold">Error</h3>
+        <p className="text-sm text-muted-foreground">{error}</p>
+        <Button
+          variant="outline"
+          className="mt-4"
+          onClick={() => window.location.reload()}
+        >
+          Try Again
+        </Button>
+      </div>
+    );
+  }
 
   if (projects.length === 0) {
     return (
@@ -41,7 +84,7 @@ export default async function ProjectsList() {
 
   return (
     <div className="flex flex-col gap-3">
-      {projects.map((project) => (
+      {projects.map((project: Project) => (
         <ProjectItem key={project.id} project={project} />
       ))}
       {projects.length > 0 && (
@@ -64,7 +107,8 @@ function ProjectItem({ project }: { project: Project }) {
   const timeAgo = formatDistanceToNow(new Date(project.createdAt), {
     addSuffix: true,
   });
-  const logCount = project._count?.logs || 0;
+  /* @ts-expect-error logs is not typed */
+  const logCount = project?.logs?.length || 0;
 
   return (
     <Link href={`/dashboard/projects/${project.id}`}>
@@ -90,44 +134,4 @@ function ProjectItem({ project }: { project: Project }) {
       </Card>
     </Link>
   );
-}
-
-// Mock function - replace with actual API call
-async function getMockProjects(): Promise<Project[]> {
-  // TODO: Replace with API call to get projects
-  return [
-    {
-      id: "project-1",
-      name: "Web Dashboard",
-      apiKey: "api_key_12345",
-      userId: "user-1",
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7),
-      updatedAt: new Date(Date.now() - 1000 * 60 * 60),
-      _count: {
-        logs: 128,
-      },
-    },
-    {
-      id: "project-2",
-      name: "Mobile App",
-      apiKey: "api_key_67890",
-      userId: "user-1",
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14),
-      updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 3),
-      _count: {
-        logs: 76,
-      },
-    },
-    {
-      id: "project-3",
-      name: "API Service",
-      apiKey: "api_key_abcde",
-      userId: "user-1",
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2),
-      updatedAt: new Date(Date.now() - 1000 * 60 * 30),
-      _count: {
-        logs: 43,
-      },
-    },
-  ];
 }

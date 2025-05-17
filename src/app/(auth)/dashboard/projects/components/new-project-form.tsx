@@ -20,11 +20,12 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
+import { fetcher } from "@/lib/axios";
+import { toast } from "sonner";
 
 const formSchema = z.object({
   name: z
@@ -52,18 +53,23 @@ export function NewProjectForm() {
     try {
       setIsSubmitting(true);
 
-      // TODO: Replace with actual API call to create project
-      console.log("Creating project:", values);
+      const response = await fetcher.post("/projects", {
+        name: values.name,
+      });
 
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Redirect to projects page
-      router.push("/dashboard/projects");
-      router.refresh();
+      if (response.status === 201) {
+        router.push(`/dashboard/projects/${response.data.id}`);
+        router.refresh();
+      } else {
+        toast.error("Failed to create project", {
+          description: response.data.error,
+        });
+      }
     } catch (error) {
       console.error("Error creating project:", error);
-      // TODO: Show error toast
+      toast.error("Failed to create project", {
+        description: "An unexpected error occurred.",
+      });
     } finally {
       setIsSubmitting(false);
     }

@@ -1,5 +1,9 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import {
   AlertCircle,
@@ -7,8 +11,10 @@ import {
   CheckCircle2,
   Info,
   Terminal,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
+import { fetcher } from "@/lib/axios";
 
 // Types based on Prisma schema
 interface Log {
@@ -23,9 +29,58 @@ interface Log {
   createdAt: Date;
 }
 
-export default async function RecentLogsList() {
-  // TODO: Replace with actual API call
-  const logs: Log[] = await getMockRecentLogs();
+export default function RecentLogsList() {
+  const [logs, setLogs] = useState<Log[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchLogs = async () => {
+      try {
+        setIsLoading(true);
+        // In a real implementation, you would fetch from API
+        // For now, we're using the mock function but in a client component
+        const response = await fetcher("/logs"); // Update with the correct endpoint
+        setLogs(response.data);
+        setError(null);
+      } catch (err) {
+        setError("Failed to load logs. Please try again later.");
+        console.error("Error fetching logs:", err);
+        // Fallback to mock data in case of error for demo purposes
+        setLogs(getMockRecentLogs());
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchLogs();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
+        <Loader2 className="h-6 w-6 text-primary animate-spin mb-2" />
+        <p className="text-sm text-muted-foreground">Loading logs...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
+        <AlertCircle className="h-6 w-6 text-destructive mb-2" />
+        <h3 className="mb-2 text-lg font-semibold">Error</h3>
+        <p className="text-sm text-muted-foreground">{error}</p>
+        <Button
+          variant="outline"
+          className="mt-4"
+          onClick={() => window.location.reload()}
+        >
+          Try Again
+        </Button>
+      </div>
+    );
+  }
 
   if (logs.length === 0) {
     return (
@@ -162,8 +217,8 @@ function LogItem({ log }: { log: Log }) {
 }
 
 // Mock function - replace with actual API call
-async function getMockRecentLogs(): Promise<Log[]> {
-  // TODO: Replace with API call to get recent logs
+function getMockRecentLogs(): Log[] {
+  // This is now a synchronous function since we're using it as a fallback
   return [
     {
       id: "1",

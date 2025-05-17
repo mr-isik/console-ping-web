@@ -13,7 +13,7 @@ export default function DashboardPage() {
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <Link href="/dashboard/projects/new">
           <Button>
-            <PlusCircle className="mr-2 h-4 w-4" />
+            <PlusCircle className="h-4 w-4" />
             Add Project
           </Button>
         </Link>

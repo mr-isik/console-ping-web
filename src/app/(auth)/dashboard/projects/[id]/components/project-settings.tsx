@@ -20,7 +20,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -36,6 +35,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Loader2, Trash2 } from "lucide-react";
+import { fetcher } from "@/lib/axios";
+import { toast } from "sonner";
 
 // Types based on Prisma schema
 interface Project {
@@ -94,18 +95,25 @@ export default function ProjectSettings({ project }: { project: Project }) {
     try {
       setIsDeleting(true);
 
-      // TODO: Replace with actual API call to delete project
-      console.log("Deleting project:", project.id);
+      const result = await fetcher(`/projects/${project.id}`, {
+        method: "DELETE",
+      });
 
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      if (result.status !== 200) {
+        throw new Error(result.data.error);
+      }
 
+      toast.success("Project deleted successfully");
       router.push("/dashboard/projects");
       router.refresh();
-      // TODO: Show success toast
     } catch (error) {
       console.error("Error deleting project:", error);
-      // TODO: Show error toast
+      toast.error("Failed to delete project", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred",
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -138,9 +146,7 @@ export default function ProjectSettings({ project }: { project: Project }) {
                 )}
               />
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
+                {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
                 Save Changes
               </Button>
             </form>
@@ -163,7 +169,7 @@ export default function ProjectSettings({ project }: { project: Project }) {
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive">
-                <Trash2 className="mr-2 h-4 w-4" />
+                <Trash2 className="h-4 w-4" />
                 Delete Project
               </Button>
             </AlertDialogTrigger>
@@ -172,7 +178,7 @@ export default function ProjectSettings({ project }: { project: Project }) {
                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                 <AlertDialogDescription>
                   This action cannot be undone. This will permanently delete the
-                  project "{project.name}" and all associated logs.
+                  project &quot;{project.name}&quot; and all associated logs.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -187,9 +193,7 @@ export default function ProjectSettings({ project }: { project: Project }) {
                   disabled={isDeleting}
                   className="bg-destructive hover:bg-destructive/90"
                 >
-                  {isDeleting && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
+                  {isDeleting && <Loader2 className="h-4 w-4 animate-spin" />}
                   Delete
                 </AlertDialogAction>
               </AlertDialogFooter>
